@@ -48,7 +48,7 @@ func Reverse(s string) string {
 func main() {
     http.HandleFunc("/address", AddressLookup)
     http.HandleFunc("/uuid/", UUIDLookup)
-    http.ListenAndServe(":8080", nil)
+    http.ListenAndServe(":80", nil)
 }
 
 func AddressLookup( w http.ResponseWriter, r *http.Request) {
