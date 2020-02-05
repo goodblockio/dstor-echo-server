@@ -1,18 +1,22 @@
 package main
 
+// dStor Echo Server
+// MIT License // Stephanie Sunshine // 01/20
+
 import (
-	"log"
-  "fmt"
-	"net"
-  "net/http"
-	"time"
 	"bufio"
-  "os"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
 	"regexp"
-  "strconv"
-  "strings"
+	"strconv"
+	"strings"
+	"time"
 )
 
+// LookupUUID Function queries a remote ip address and port for a uuid
 func LookupUUID(ip net.IP, port uint64) error {
 	address := fmt.Sprintf("[%s]:%d", ip, port)
 	conn, err := net.DialTimeout("tcp", address, 2*time.Second)
@@ -29,7 +33,6 @@ func LookupUUID(ip net.IP, port uint64) error {
 
 	re := regexp.MustCompile("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}")
 	match := re.FindStringSubmatch(string(buffer))
-	// fmt.Printf("match size: %v\n", len(match))
 	defer conn.Close()
 	if len(match) != 1 {
 		return nil
@@ -37,51 +40,58 @@ func LookupUUID(ip net.IP, port uint64) error {
 	return fmt.Errorf("%v", match[0])
 }
 
+// Reverse Reverse a string primitive
 func Reverse(s string) string {
-    n := len(s)
-    runes := make([]rune, n)
-    for _, rune := range s {
-        n--
-        runes[n] = rune
-    }
-    return string(runes[n:])
+	n := len(s)
+	runes := make([]rune, n)
+	for _, rune := range s {
+		n--
+		runes[n] = rune
+	}
+	return string(runes[n:])
 }
 
+// Entry
 func main() {
-    
-	  var PORT string
 
-    if os.Getenv("PORT") != "" {
-		  PORT = os.Getenv("PORT")
-		} else {
-		  PORT = "80"
-    }
+	var PORT string
 
-    http.HandleFunc("/address", AddressLookup)
-    http.HandleFunc("/uuid/", UUIDLookup)
+	if os.Getenv("PORT") != "" {
+		PORT = os.Getenv("PORT")
+	} else {
+		PORT = "80"
+	}
 
-    fmt.Printf("Starting server at :%s...\n",PORT)
+	http.HandleFunc("/address", AddressLookup)
+	http.HandleFunc("/uuid/", UUIDLookup)
 
-    log.Fatal(http.ListenAndServe(":"+PORT, nil))
+	fmt.Printf("Starting server at :%s...\n", PORT)
+
+	log.Fatal(http.ListenAndServe(":"+PORT, nil))
 }
 
-func AddressLookup( w http.ResponseWriter, r *http.Request) {
-    res := strings.SplitN(Reverse(r.RemoteAddr),":", -1)
-    remote_ip := Reverse(strings.Join(res[1:], ":"))
-    remote_ip = strings.Replace(remote_ip, "[", "", -1)
-    remote_ip = strings.Replace(remote_ip, "]", "", -1)
-    fmt.Fprintf(w, "%v\n", remote_ip)
+// AddressLookup Client ip address responder
+func AddressLookup(w http.ResponseWriter, r *http.Request) {
+	res := strings.SplitN(Reverse(r.RemoteAddr), ":", -1)
+	remoteIP := Reverse(strings.Join(res[1:], ":"))
+
+	re := regexp.MustCompile("\\[|\\]")
+	remoteIP = re.ReplaceAllString(remoteIP, "")
+
+	fmt.Fprintf(w, "%v\n", remoteIP)
 }
 
+// UUIDLookup Client uuid responder
 func UUIDLookup(w http.ResponseWriter, r *http.Request) {
-    res := strings.SplitN(Reverse(r.RemoteAddr),":", -1)
-    remote_ip := Reverse(strings.Join(res[1:], ":"))
-    remote_ip = strings.Replace(remote_ip, "[", "", -1)
-    remote_ip = strings.Replace(remote_ip, "]", "", -1)
+	res := strings.SplitN(Reverse(r.RemoteAddr), ":", -1)
+	remoteIP := Reverse(strings.Join(res[1:], ":"))
 
-    ip  := net.ParseIP(remote_ip)
+	re := regexp.MustCompile("\\[|\\]")
+	remoteIP = re.ReplaceAllString(remoteIP, "")
 
-    path := strings.SplitN(string(r.URL.Path[1:]), "/", -1)
-    port, _ := strconv.ParseUint(path[1],10,64)
-    fmt.Fprintf(w, "%v\n", LookupUUID(ip, port))
+	ip := net.ParseIP(remoteIP)
+
+	path := strings.SplitN(string(r.URL.Path[1:]), "/", -1)
+	port, _ := strconv.ParseUint(path[1], 10, 64)
+	fmt.Fprintf(w, "%v\n", LookupUUID(ip, port))
 }
