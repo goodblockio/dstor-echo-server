@@ -1,11 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"log"
+  "fmt"
 	"net"
   "net/http"
 	"time"
 	"bufio"
+  "os"
 	"regexp"
   "strconv"
   "strings"
@@ -46,9 +48,21 @@ func Reverse(s string) string {
 }
 
 func main() {
+    
+	  var PORT string
+
+    if os.Getenv("PORT") != "" {
+		  PORT = os.Getenv("PORT")
+		} else {
+		  PORT = "80"
+    }
+
     http.HandleFunc("/address", AddressLookup)
     http.HandleFunc("/uuid/", UUIDLookup)
-    http.ListenAndServe(":80", nil)
+
+    fmt.Printf("Starting server at :%s...\n",PORT)
+
+    log.Fatal(http.ListenAndServe(":"+PORT, nil))
 }
 
 func AddressLookup( w http.ResponseWriter, r *http.Request) {
